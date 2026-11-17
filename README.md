@@ -11,7 +11,7 @@ Web dịch truyện EPUB bằng Gemini API, chạy hoàn toàn trong trình duy�
 
 ## Chạy trên máy
 
-Cần Node.js 20 trở lên.
+Cần Node.js **22 LTS** trở lên (tối thiểu 20.19). Kiểm tra bằng `node -v`; bản cũ hơn sẽ báo lỗi `styleText` khi chạy `npm run dev`.
 
 ```bash
 npm install
