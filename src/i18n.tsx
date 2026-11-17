@@ -1,0 +1,219 @@
+// Giao diện song ngữ Việt / Anh. Thêm chuỗi mới: thêm vào cả hai bảng `vi` và `en`.
+import { createContext, useContext } from 'react';
+
+const vi = {
+  'nav.library': 'Thư viện', 'nav.new': 'Dịch truyện mới', 'nav.keys': 'API key',
+  'theme.toggle': 'Đổi giao diện sáng / tối', 'lang.label': 'Ngôn ngữ giao diện',
+  'common.back': 'Quay lại', 'common.next': 'Tiếp tục', 'common.skip': 'Bỏ qua', 'common.save': 'Lưu', 'common.saved': 'Đã lưu',
+  'common.delete': 'Xoá', 'common.cancel': 'Huỷ', 'common.add': 'Thêm', 'common.loading': 'Đang tải…', 'common.chapters': 'chương',
+  'common.error': 'Lỗi', 'common.original': 'Bản gốc', 'common.translation': 'Bản dịch', 'common.all': 'Tất cả',
+
+  'lib.title': 'Thư viện truyện',
+  'lib.sub': 'Các truyện bạn đã và đang dịch. Mọi dữ liệu (file, bản dịch, API key) chỉ lưu trong trình duyệt này.',
+  'lib.new': 'Dịch truyện mới',
+  'lib.tabNote': 'Giữ tab này mở khi đang dịch. Nếu lỡ đóng, mở lại web để dịch tiếp từ chỗ dở — tiến độ được lưu sau mỗi cụm.',
+  'lib.filter.running': 'Đang dịch', 'lib.filter.done': 'Hoàn thành', 'lib.search': 'Tìm theo tên truyện, tác giả…',
+  'lib.empty': 'Chưa có truyện nào. Bấm “Dịch truyện mới” để bắt đầu.',
+  'lib.act.view': 'Xem tiến độ', 'lib.act.download': 'Tải EPUB', 'lib.act.resume': 'Dịch tiếp', 'lib.act.continue': 'Tiếp tục thiết lập',
+  'lib.act.keys': 'Kiểm tra API key', 'lib.delete.confirm': 'Xoá truyện “{t}” cùng toàn bộ bản dịch? Không thể hoàn tác.',
+
+  'status.draft': 'Đang thiết lập', 'status.ready': 'Sẵn sàng', 'status.running': 'Đang dịch', 'status.paused': 'Tạm dừng',
+  'status.done': 'Hoàn thành', 'status.error': 'Có lỗi', 'status.no_keys': 'Hết key khả dụng', 'status.chunk_errors': '{n} cụm lỗi cần xử lý',
+  'status.interrupted': 'Bị gián đoạn — bấm Dịch tiếp',
+
+  'step.1': 'Tải file EPUB', 'step.2': 'API key', 'step.3': 'Prompt dịch', 'step.4': 'Thông tin sách', 'step.5': 'Xác nhận & chạy',
+  'step.n': 'Bước {n}', 'wiz.kicker': 'DỊCH TRUYỆN MỚI',
+
+  'up.title': 'Tải file EPUB',
+  'up.sub': 'Web đọc file ngay trong trình duyệt — không tải lên máy chủ nào. Chọn những chương cần dịch; phần còn lại được giữ nguyên.',
+  'up.drop': 'Kéo thả file EPUB vào đây', 'up.or': 'hoặc', 'up.pick': 'Chọn file từ máy', 'up.only': 'Phiên bản 1 chỉ hỗ trợ .epub · PDF sẽ có ở bản sau',
+  'up.reading': 'Đang đọc file…', 'up.read': 'đã đọc xong', 'up.valid': 'Hợp lệ', 'up.change': 'Đổi file khác',
+  'up.notEpub': 'File không phải EPUB.', 'up.bad': 'Không đọc được file EPUB này: {e}',
+  'up.m.title': 'Tên gốc', 'up.m.author': 'Tác giả', 'up.m.lang': 'Ngôn ngữ gốc', 'up.m.chapters': 'Số tài liệu', 'up.m.images': 'Hình ảnh', 'up.m.chars': 'Tổng ký tự',
+  'up.m.imagesKeep': '{n} · giữ nguyên',
+  'up.toc': 'Mục lục · chọn chương cần dịch', 'up.tocSub': 'Đọc từ file gốc. Chương không chọn sẽ được giữ nguyên trong EPUB.',
+  'up.filter': 'Lọc chương…', 'up.selectAll': 'Chọn tất cả', 'up.selectNone': 'Bỏ chọn tất cả',
+  'up.col.title': 'Tiêu đề (gốc)', 'up.col.chars': 'Ký tự', 'up.col.tokens': 'Token ước tính', 'up.col.status': 'Trạng thái',
+  'up.st.will': 'Sẽ dịch', 'up.st.empty': 'Bỏ qua · không có chữ', 'up.st.toc': 'Bỏ qua · trang mục lục', 'up.st.off': 'Không dịch',
+  'up.selected': 'Đã chọn {a} / {b} chương', 'up.estimate': '≈ {n} token đầu vào (ước tính, chưa gồm prompt)',
+  'up.needFile': 'Hãy chọn file EPUB trước.', 'up.needChapter': 'Hãy chọn ít nhất một chương.',
+
+  'keys.title': 'API key Gemini', 'keys.sub': 'Thêm một hoặc nhiều key. Khi một key chạm giới hạn, web tự chuyển sang key kế tiếp.',
+  'keys.add': 'Thêm API key', 'keys.label': 'Nhãn', 'keys.labelPh': 'VD: Project D', 'keys.key': 'API key', 'keys.addBtn': 'Thêm key',
+  'keys.addHint': 'Mỗi key nên thuộc một project khác nhau trên Google AI Studio. Có thể dán nhiều key cùng lúc, mỗi dòng một key.',
+  'keys.list': 'Danh sách key · {n}', 'keys.summary': '{ok} hoạt động · {cd} đang nghỉ · {bad} lỗi', 'keys.testAll': 'Test tất cả', 'keys.test': 'Test',
+  'keys.col.label': 'Nhãn', 'keys.col.key': 'Key', 'keys.col.model': 'Model', 'keys.col.limit': 'Giới hạn (phút / ngày)', 'keys.col.used': 'Đã dùng hôm nay', 'keys.col.state': 'Trạng thái',
+  'keys.empty': 'Chưa có key nào. Lấy key miễn phí tại aistudio.google.com/apikey.',
+  'keys.st.ok': 'Hoạt động', 'keys.st.untested': 'Chưa test', 'keys.st.cooldown': 'Đang nghỉ · 429 · còn {s}s', 'keys.st.quota': 'Hết lượt hôm nay',
+  'keys.st.invalid': 'Key bị từ chối', 'keys.st.error': 'Lỗi', 'keys.st.disabled': 'Đã tắt', 'keys.enable': 'Bật lại',
+  'keys.rot': 'Luân phiên key', 'keys.rot.how': 'Cách chia request', 'keys.rot.rr': 'Lần lượt', 'keys.rot.rrHint': 'A → B → C → A… bỏ qua key đang nghỉ',
+  'keys.rot.most': 'Ưu tiên key còn nhiều lượt', 'keys.rot.mostHint': 'Dùng key có quota ngày còn nhiều nhất trước',
+  'keys.cooldown': 'Nghỉ khi gặp lỗi 429', 'keys.concurrency': 'Request chạy đồng thời', 'keys.retries': 'Thử lại tối đa', 'keys.autoDisable': 'Tự tắt key lỗi 401 / 403',
+  'keys.sec': 'giây', 'keys.times': 'lần',
+  'keys.privacy': 'Key chỉ lưu trong trình duyệt này và chỉ được gửi tới máy chủ Google. Không có server trung gian.',
+  'keys.terms': 'Nên đọc điều khoản Gemini API về việc dùng nhiều project.', 'keys.export': 'Xuất danh sách', 'keys.import': 'Nhập từ file',
+  'keys.need': 'Cần ít nhất một API key để tiếp tục.', 'keys.delConfirm': 'Xoá key “{t}”?', 'keys.imported': 'Đã nhập {n} key.',
+
+  'pr.title': 'Prompt dịch', 'pr.sub': 'Chọn văn phong, sửa prompt nếu cần và dịch thử một đoạn để xem kết quả.',
+  'pr.prompt': 'Prompt', 'pr.saveTpl': 'Lưu làm mẫu', 'pr.reset': 'Khôi phục mặc định', 'pr.preset': 'Mẫu có sẵn', 'pr.address': 'Xưng hô', 'pr.names': 'Tên riêng',
+  'pr.preset.xianxia': 'Tiên hiệp / Huyền huyễn', 'pr.preset.ancient': 'Ngôn tình cổ đại', 'pr.preset.modern': 'Đô thị hiện đại', 'pr.preset.custom': 'Tuỳ chỉnh',
+  'pr.genre': 'Thể loại (biến {the_loai})', 'pr.content': 'Nội dung prompt', 'pr.vars': 'Bấm để chèn biến:',
+  'pr.locked': 'Phần yêu cầu trả về JSON theo mã đoạn (để ghép bản dịch vào đúng chỗ trong EPUB) được web tự thêm ở cuối — bạn không cần viết.',
+  'pr.advanced': 'Nâng cao', 'pr.model': 'Model cho truyện này', 'pr.modelAuto': 'Theo từng key', 'pr.chunk': 'Độ dài mỗi lần gửi (ký tự)', 'pr.temp': 'Độ sáng tạo (temperature)',
+  'pr.gloss': 'Bảng thuật ngữ · {n}', 'pr.glossSub': 'Giữ tên nhân vật, môn phái, cảnh giới thống nhất suốt truyện.', 'pr.csv': 'Nhập CSV', 'pr.csvExport': 'Xuất CSV',
+  'pr.col.src': 'Gốc', 'pr.col.dst': 'Tiếng Việt', 'pr.col.kind': 'Loại', 'pr.kindPh': 'Nhân vật',
+  'pr.test': 'Dịch thử', 'pr.testSub': 'Kiểm tra prompt trên một đoạn ngắn trước khi chạy cả cuốn.', 'pr.sample': 'Đoạn mẫu', 'pr.sampleN': '{t} · 3 đoạn đầu',
+  'pr.testing': 'Đang dịch thử…', 'pr.testDone': '{tok} token · {s} giây · key {k}', 'pr.testEmpty': 'Bấm “Dịch thử” để xem kết quả ở đây.',
+  'pr.tplSaved': 'Đã lưu prompt làm mẫu cho các truyện sau.',
+
+  'meta.title': 'Thông tin sách', 'meta.sub': 'Chỉnh tên truyện, tác giả, mô tả và ảnh bìa cho EPUB đã dịch.',
+  'meta.note': 'Bước này không bắt buộc. Các ô đã được điền tự động từ file gốc — bỏ qua thì EPUB mới giữ nguyên thông tin cũ.',
+  'meta.cover': 'Ảnh bìa', 'meta.coverOrig': 'Ảnh bìa gốc', 'meta.coverNone': 'File gốc không có ảnh bìa', 'meta.coverChange': 'Thay ảnh', 'meta.coverReset': 'Dùng ảnh gốc',
+  'meta.auto': 'Tự điền từ file gốc', 'meta.autoTr': 'Tự dịch tên & mô tả khi bắt đầu', 'meta.restore': 'Khôi phục về gốc',
+  'meta.f.title': 'Tên truyện', 'meta.f.creator': 'Tác giả', 'meta.f.translator': 'Người dịch', 'meta.f.translatorPh': 'Tên người dịch (tuỳ chọn)',
+  'meta.f.lang': 'Ngôn ngữ', 'meta.f.subjects': 'Thể loại', 'meta.f.subjectPh': 'Thêm thể loại…', 'meta.f.desc': 'Mô tả', 'meta.f.publisher': 'Nhà xuất bản', 'meta.f.file': 'Tên file xuất',
+  'meta.orig': 'Gốc:', 'meta.tr': 'Dịch', 'meta.trDesc': 'Dịch mô tả', 'meta.trFail': 'Không dịch được: {e}',
+
+  'cf.title': 'Xác nhận & chạy', 'cf.sub': 'Kiểm tra lại lựa chọn rồi bắt đầu. Bạn có thể tạm dừng và sửa bản dịch bất cứ lúc nào.',
+  'cf.output': 'Kiểu đầu ra', 'cf.v1': 'Phiên bản 1', 'cf.soon': 'Sắp có',
+  'cf.a': 'Giữ nguyên EPUB gốc, chỉ thay chữ', 'cf.aHint': 'Giữ CSS, hình ảnh, mục lục, bố cục. Chỉ nội dung từng đoạn văn được thay bằng bản dịch.',
+  'cf.b': 'Đóng EPUB mới', 'cf.bHint': 'Tạo EPUB sạch từ bản dịch với giao diện có sẵn. Dành cho bản sau và cho PDF.',
+  'cf.toc': 'Dịch tiêu đề chương & mục lục', 'cf.tocHint': 'Mục lục (nav / toc.ncx) được cập nhật theo tên chương đã dịch',
+  'cf.bi': 'Song ngữ: chèn bản gốc dưới mỗi đoạn', 'cf.biHint': 'Tiện để đối chiếu khi đọc, file sẽ dài gấp đôi',
+  'cf.unsel': 'Chương không chọn', 'cf.unselHint': 'Luôn được giữ nguyên bản gốc', 'cf.fixed': 'Cố định',
+  'cf.summary': 'Tóm tắt', 'cf.s.book': 'Truyện', 'cf.s.chapters': 'Chương sẽ dịch', 'cf.s.tokens': 'Token đầu vào (ước tính)', 'cf.s.keys': 'Key dùng được',
+  'cf.s.model': 'Model', 'cf.s.conc': 'Chạy đồng thời', 'cf.s.concN': '{n} request', 'cf.start': 'Bắt đầu dịch', 'cf.preparing': 'Đang chuẩn bị…',
+  'cf.warn': 'Giữ tab này mở trong khi dịch. Tiến độ được lưu sau mỗi cụm — đóng tab rồi mở lại vẫn dịch tiếp được.',
+  'cf.busy': 'Đang có truyện khác được dịch. Hãy tạm dừng truyện đó trước.',
+
+  'pg.breadcrumb': 'Thư viện', 'pg.pause': 'Tạm dừng', 'pg.resume': 'Dịch tiếp', 'pg.download': 'Tải EPUB hiện tại', 'pg.building': 'Đang đóng gói…',
+  'pg.downloadHint': 'Chương chưa dịch sẽ giữ bản gốc nếu tải về lúc này', 'pg.settings': 'Sửa thiết lập',
+  'pg.chDone': '{a} / {b} chương xong', 'pg.running': '{n} cụm đang dịch', 'pg.errors': '{n} lỗi cần xử lý', 'pg.eta': '≈ {t} còn lại',
+  'pg.chapters': 'Chương', 'pg.f.running': 'Đang chạy', 'pg.f.errors': 'Lỗi · {n}',
+  'pg.ch.done': 'Xong', 'pg.ch.edited': 'Xong · đã sửa tay', 'pg.ch.running': 'Đang dịch · cụm {a}/{b}', 'pg.ch.error': 'Có lỗi', 'pg.ch.pending': 'Chờ',
+  'pg.ch.partial': 'Đã dịch {a}/{b} cụm', 'pg.retry': 'Thử lại', 'pg.editHand': 'Sửa tay',
+  'pg.review': 'Xem & sửa', 'pg.reviewHint': 'Sửa trực tiếp; bản sửa tay không bị ghi đè khi dịch lại.', 'pg.retranslate': 'Dịch lại chương',
+  'pg.retranslateConfirm': 'Dịch lại toàn bộ chương này? Các đoạn đã sửa tay vẫn được giữ.', 'pg.selectCh': 'Chọn một chương ở bên trái để xem và sửa bản dịch.',
+  'pg.log': 'Nhật ký', 'pg.logDownload': 'Tải log', 'pg.chunkErr.safety': 'Bị bộ lọc an toàn của Gemini chặn — hãy dịch tay đoạn này.',
+  'pg.notStarted': 'Truyện này chưa bắt đầu dịch.', 'pg.goWizard': 'Tiếp tục thiết lập', 'pg.edited': 'Đã sửa tay', 'pg.notFound': 'Không tìm thấy truyện.',
+  'pg.toc': 'Mục lục', 'pg.meta': 'Thông tin sách', 'pg.untranslated': '(chưa dịch)',
+  'err.no_keys': 'Không có API key nào dùng được. Thêm hoặc kiểm tra lại key.',
+} as const;
+
+export type MsgKey = keyof typeof vi;
+
+const en: Record<MsgKey, string> = {
+  'nav.library': 'Library', 'nav.new': 'New translation', 'nav.keys': 'API keys',
+  'theme.toggle': 'Toggle light / dark', 'lang.label': 'Interface language',
+  'common.back': 'Back', 'common.next': 'Continue', 'common.skip': 'Skip', 'common.save': 'Save', 'common.saved': 'Saved',
+  'common.delete': 'Delete', 'common.cancel': 'Cancel', 'common.add': 'Add', 'common.loading': 'Loading…', 'common.chapters': 'chapters',
+  'common.error': 'Error', 'common.original': 'Original', 'common.translation': 'Translation', 'common.all': 'All',
+
+  'lib.title': 'Your library',
+  'lib.sub': 'Books you have translated or are translating. All data (files, translations, API keys) stays in this browser.',
+  'lib.new': 'New translation',
+  'lib.tabNote': 'Keep this tab open while translating. If it closes, reopen the site to resume — progress is saved after every chunk.',
+  'lib.filter.running': 'In progress', 'lib.filter.done': 'Done', 'lib.search': 'Search by title or author…',
+  'lib.empty': 'No books yet. Click “New translation” to start.',
+  'lib.act.view': 'View progress', 'lib.act.download': 'Download EPUB', 'lib.act.resume': 'Resume', 'lib.act.continue': 'Continue setup',
+  'lib.act.keys': 'Check API keys', 'lib.delete.confirm': 'Delete “{t}” and all its translations? This cannot be undone.',
+
+  'status.draft': 'Setting up', 'status.ready': 'Ready', 'status.running': 'Translating', 'status.paused': 'Paused',
+  'status.done': 'Done', 'status.error': 'Has errors', 'status.no_keys': 'No usable key', 'status.chunk_errors': '{n} chunks need attention',
+  'status.interrupted': 'Interrupted — click Resume',
+
+  'step.1': 'Upload EPUB', 'step.2': 'API keys', 'step.3': 'Prompt', 'step.4': 'Book info', 'step.5': 'Confirm & run',
+  'step.n': 'Step {n}', 'wiz.kicker': 'NEW TRANSLATION',
+
+  'up.title': 'Upload EPUB',
+  'up.sub': 'The file is read right in your browser — nothing is uploaded to a server. Choose the chapters to translate; the rest stays unchanged.',
+  'up.drop': 'Drop an EPUB file here', 'up.or': 'or', 'up.pick': 'Choose a file', 'up.only': 'Version 1 supports .epub only · PDF is coming later',
+  'up.reading': 'Reading file…', 'up.read': 'read', 'up.valid': 'Valid', 'up.change': 'Choose another file',
+  'up.notEpub': 'This is not an EPUB file.', 'up.bad': 'Could not read this EPUB: {e}',
+  'up.m.title': 'Original title', 'up.m.author': 'Author', 'up.m.lang': 'Source language', 'up.m.chapters': 'Documents', 'up.m.images': 'Images', 'up.m.chars': 'Total characters',
+  'up.m.imagesKeep': '{n} · kept as is',
+  'up.toc': 'Contents · choose chapters to translate', 'up.tocSub': 'Read from the original file. Unselected chapters stay unchanged in the EPUB.',
+  'up.filter': 'Filter chapters…', 'up.selectAll': 'Select all', 'up.selectNone': 'Select none',
+  'up.col.title': 'Title (original)', 'up.col.chars': 'Chars', 'up.col.tokens': 'Est. tokens', 'up.col.status': 'Status',
+  'up.st.will': 'Will translate', 'up.st.empty': 'Skipped · no text', 'up.st.toc': 'Skipped · contents page', 'up.st.off': 'Not translated',
+  'up.selected': '{a} / {b} chapters selected', 'up.estimate': '≈ {n} input tokens (estimate, prompt excluded)',
+  'up.needFile': 'Choose an EPUB file first.', 'up.needChapter': 'Select at least one chapter.',
+
+  'keys.title': 'Gemini API keys', 'keys.sub': 'Add one or more keys. When a key hits its limit, the app switches to the next one.',
+  'keys.add': 'Add API key', 'keys.label': 'Label', 'keys.labelPh': 'e.g. Project D', 'keys.key': 'API key', 'keys.addBtn': 'Add key',
+  'keys.addHint': 'Ideally each key belongs to a different Google AI Studio project. You can paste several keys, one per line.',
+  'keys.list': 'Keys · {n}', 'keys.summary': '{ok} active · {cd} cooling down · {bad} failing', 'keys.testAll': 'Test all', 'keys.test': 'Test',
+  'keys.col.label': 'Label', 'keys.col.key': 'Key', 'keys.col.model': 'Model', 'keys.col.limit': 'Limit (minute / day)', 'keys.col.used': 'Used today', 'keys.col.state': 'Status',
+  'keys.empty': 'No keys yet. Get a free key at aistudio.google.com/apikey.',
+  'keys.st.ok': 'Active', 'keys.st.untested': 'Not tested', 'keys.st.cooldown': 'Cooling down · 429 · {s}s left', 'keys.st.quota': 'Daily quota used',
+  'keys.st.invalid': 'Key rejected', 'keys.st.error': 'Error', 'keys.st.disabled': 'Disabled', 'keys.enable': 'Re-enable',
+  'keys.rot': 'Key rotation', 'keys.rot.how': 'How requests are spread', 'keys.rot.rr': 'Round robin', 'keys.rot.rrHint': 'A → B → C → A… skipping keys that are cooling down',
+  'keys.rot.most': 'Most quota left first', 'keys.rot.mostHint': 'Use the key with the most daily quota left first',
+  'keys.cooldown': 'Pause key on 429', 'keys.concurrency': 'Concurrent requests', 'keys.retries': 'Max retries', 'keys.autoDisable': 'Auto-disable keys failing with 401 / 403',
+  'keys.sec': 'sec', 'keys.times': 'times',
+  'keys.privacy': 'Keys are stored only in this browser and sent only to Google. There is no server in between.',
+  'keys.terms': 'Check the Gemini API terms about using multiple projects.', 'keys.export': 'Export list', 'keys.import': 'Import from file',
+  'keys.need': 'Add at least one API key to continue.', 'keys.delConfirm': 'Delete key “{t}”?', 'keys.imported': 'Imported {n} keys.',
+
+  'pr.title': 'Translation prompt', 'pr.sub': 'Pick a style, edit the prompt if needed and test it on a short passage.',
+  'pr.prompt': 'Prompt', 'pr.saveTpl': 'Save as template', 'pr.reset': 'Reset to default', 'pr.preset': 'Preset', 'pr.address': 'Forms of address', 'pr.names': 'Proper names',
+  'pr.preset.xianxia': 'Xianxia / Fantasy', 'pr.preset.ancient': 'Historical romance', 'pr.preset.modern': 'Modern urban', 'pr.preset.custom': 'Custom',
+  'pr.genre': 'Genre (variable {the_loai})', 'pr.content': 'Prompt text', 'pr.vars': 'Click to insert a variable:',
+  'pr.locked': 'The app appends the rule asking for JSON keyed by paragraph id (so translations land in the right place in the EPUB) — you don’t need to write it.',
+  'pr.advanced': 'Advanced', 'pr.model': 'Model for this book', 'pr.modelAuto': 'Per key', 'pr.chunk': 'Characters per request', 'pr.temp': 'Creativity (temperature)',
+  'pr.gloss': 'Glossary · {n}', 'pr.glossSub': 'Keeps character, sect and realm names consistent across the book.', 'pr.csv': 'Import CSV', 'pr.csvExport': 'Export CSV',
+  'pr.col.src': 'Source', 'pr.col.dst': 'Vietnamese', 'pr.col.kind': 'Type', 'pr.kindPh': 'Character',
+  'pr.test': 'Test translation', 'pr.testSub': 'Try the prompt on a short passage before running the whole book.', 'pr.sample': 'Sample', 'pr.sampleN': '{t} · first 3 paragraphs',
+  'pr.testing': 'Translating…', 'pr.testDone': '{tok} tokens · {s} s · key {k}', 'pr.testEmpty': 'Click “Test translation” to see the result here.',
+  'pr.tplSaved': 'Prompt saved as the template for future books.',
+
+  'meta.title': 'Book info', 'meta.sub': 'Edit the title, author, description and cover of the translated EPUB.',
+  'meta.note': 'This step is optional. Fields are pre-filled from the original file — skip it to keep the original info.',
+  'meta.cover': 'Cover', 'meta.coverOrig': 'Original cover', 'meta.coverNone': 'The original file has no cover', 'meta.coverChange': 'Replace', 'meta.coverReset': 'Use original',
+  'meta.auto': 'Pre-filled from the original', 'meta.autoTr': 'Auto-translate title & description on start', 'meta.restore': 'Restore original',
+  'meta.f.title': 'Title', 'meta.f.creator': 'Author', 'meta.f.translator': 'Translator', 'meta.f.translatorPh': 'Translator name (optional)',
+  'meta.f.lang': 'Language', 'meta.f.subjects': 'Genres', 'meta.f.subjectPh': 'Add a genre…', 'meta.f.desc': 'Description', 'meta.f.publisher': 'Publisher', 'meta.f.file': 'Output file name',
+  'meta.orig': 'Original:', 'meta.tr': 'Translate', 'meta.trDesc': 'Translate description', 'meta.trFail': 'Could not translate: {e}',
+
+  'cf.title': 'Confirm & run', 'cf.sub': 'Review your choices and start. You can pause and edit translations at any time.',
+  'cf.output': 'Output', 'cf.v1': 'Version 1', 'cf.soon': 'Coming soon',
+  'cf.a': 'Keep the original EPUB, replace text only', 'cf.aHint': 'Keeps CSS, images, contents and layout. Only paragraph text is replaced.',
+  'cf.b': 'Build a new EPUB', 'cf.bHint': 'A clean EPUB from the translation with a built-in theme. For a later version and for PDF.',
+  'cf.toc': 'Translate chapter titles & contents', 'cf.tocHint': 'The contents (nav / toc.ncx) is updated with translated chapter titles',
+  'cf.bi': 'Bilingual: insert the original under each paragraph', 'cf.biHint': 'Handy for comparing while reading; the file doubles in length',
+  'cf.unsel': 'Unselected chapters', 'cf.unselHint': 'Always kept in the original language', 'cf.fixed': 'Fixed',
+  'cf.summary': 'Summary', 'cf.s.book': 'Book', 'cf.s.chapters': 'Chapters to translate', 'cf.s.tokens': 'Input tokens (estimate)', 'cf.s.keys': 'Usable keys',
+  'cf.s.model': 'Model', 'cf.s.conc': 'Concurrency', 'cf.s.concN': '{n} requests', 'cf.start': 'Start translating', 'cf.preparing': 'Preparing…',
+  'cf.warn': 'Keep this tab open while translating. Progress is saved after every chunk — you can close and reopen to resume.',
+  'cf.busy': 'Another book is being translated. Pause it first.',
+
+  'pg.breadcrumb': 'Library', 'pg.pause': 'Pause', 'pg.resume': 'Resume', 'pg.download': 'Download current EPUB', 'pg.building': 'Packaging…',
+  'pg.downloadHint': 'Untranslated chapters keep the original text if you download now', 'pg.settings': 'Edit settings',
+  'pg.chDone': '{a} / {b} chapters done', 'pg.running': '{n} chunks in progress', 'pg.errors': '{n} errors to handle', 'pg.eta': '≈ {t} left',
+  'pg.chapters': 'Chapters', 'pg.f.running': 'Running', 'pg.f.errors': 'Errors · {n}',
+  'pg.ch.done': 'Done', 'pg.ch.edited': 'Done · edited', 'pg.ch.running': 'Translating · chunk {a}/{b}', 'pg.ch.error': 'Has errors', 'pg.ch.pending': 'Waiting',
+  'pg.ch.partial': '{a}/{b} chunks translated', 'pg.retry': 'Retry', 'pg.editHand': 'Edit by hand',
+  'pg.review': 'Review & edit', 'pg.reviewHint': 'Edit directly; manual edits are kept when re-translating.', 'pg.retranslate': 'Re-translate chapter',
+  'pg.retranslateConfirm': 'Re-translate this whole chapter? Manually edited paragraphs are kept.', 'pg.selectCh': 'Pick a chapter on the left to review and edit its translation.',
+  'pg.log': 'Log', 'pg.logDownload': 'Download log', 'pg.chunkErr.safety': 'Blocked by Gemini’s safety filter — translate this passage by hand.',
+  'pg.notStarted': 'Translation has not started for this book.', 'pg.goWizard': 'Continue setup', 'pg.edited': 'Edited', 'pg.notFound': 'Book not found.',
+  'pg.toc': 'Contents', 'pg.meta': 'Book info', 'pg.untranslated': '(not translated)',
+  'err.no_keys': 'No usable API key. Add or re-check your keys.',
+};
+
+export type Lang = 'vi' | 'en';
+const tables: Record<Lang, Record<MsgKey, string>> = { vi, en };
+
+export function translate(lang: Lang, key: MsgKey, vars?: Record<string, string | number>): string {
+  let s = tables[lang][key] ?? tables.vi[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
+  return s;
+}
+
+export const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'vi', setLang: () => {} });
+
+export function useT() {
+  const { lang } = useContext(LangContext);
+  const t = (key: MsgKey, vars?: Record<string, string | number>) => translate(lang, key, vars);
+  return { t, lang };
+}
