@@ -52,6 +52,9 @@ export interface Book {
   fileName: string;
   fileSize: number;
   opfPath: string;
+  sourceLang: string;      // ngôn ngữ gốc (zh, ja, ko, en…)
+  targetLang: string;      // ngôn ngữ dịch sang (mặc định vi)
+  detectedLang?: { code: string; reason: string };
   original: { title: string; creator: string; language: string; description: string; publisher: string; subjects: string[]; images: number; coverHref?: string };
   meta: BookMeta;
   coverOverride?: { mime: string };   // có ảnh bìa mới (lưu ở store files với key `${id}:cover`)

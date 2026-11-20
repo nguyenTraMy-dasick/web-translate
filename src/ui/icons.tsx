@@ -2,6 +2,9 @@
 import type { ReactNode } from 'react';
 
 const PATHS: Record<string, ReactNode> = {
+  globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></>,
+  external: <><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></>,
+  compass: <><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></>,
   upload: <><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></>,
   book: <><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h11"/></>,
   key: <><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/></>,
@@ -29,7 +32,7 @@ const PATHS: Record<string, ReactNode> = {
   settings: <><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></>,
 };
 
-export type IconName = 'upload' | 'book' | 'key' | 'check' | 'plus' | 'right' | 'left' | 'moon' | 'sun' | 'lock' | 'play' | 'pause' | 'download' | 'refresh' | 'trash' | 'spark' | 'info' | 'file' | 'edit' | 'search' | 'image' | 'warn' | 'more' | 'x' | 'settings';
+export type IconName = 'globe' | 'external' | 'compass' | 'upload' | 'book' | 'key' | 'check' | 'plus' | 'right' | 'left' | 'moon' | 'sun' | 'lock' | 'play' | 'pause' | 'download' | 'refresh' | 'trash' | 'spark' | 'info' | 'file' | 'edit' | 'search' | 'image' | 'warn' | 'more' | 'x' | 'settings';
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   return (

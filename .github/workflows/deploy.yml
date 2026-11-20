@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Cập nhật dữ liệu trang Khám phá mỗi ngày (22:17 UTC = 05:17 giờ Việt Nam)
+  schedule:
+    - cron: '17 22 * * *'
 
 permissions:
   contents: read
@@ -24,6 +27,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Lấy bảng xếp hạng cho trang Khám phá. Nguồn nào lỗi thì giữ dữ liệu cũ, không làm hỏng việc deploy.
+      - name: Fetch Discover data
+        continue-on-error: true
+        run: npm run discover
+        env:
+          DISCOVER_PREV_URL: https://nguyentramy-dasick.github.io/web-translate/discover/data.json
+          # API key của DaoSearch, đặt ở Settings → Secrets and variables → Actions
+          DAOSEARCH_KEY: ${{ secrets.DAOSEARCH_KEY }}
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

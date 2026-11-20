@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import * as db from '../lib/db';
-import { prepareChunks } from '../lib/actions';
+import { langPair, prepareChunks } from '../lib/actions';
+import { estimateTokensFor, langName } from '../lib/langs';
 import { currentRunning, startBook } from '../lib/runner';
 import { useKeys } from '../hooks';
 import { useT } from '../i18n';
-import { Toggle, WizardActions, estimateTokens, fmtBig, useToast } from '../ui/common';
+import { Toggle, WizardActions, fmtBig, useToast } from '../ui/common';
 import { Icon } from '../ui/icons';
 import { go, href } from '../router';
 import type { StepProps } from './Wizard';
@@ -21,6 +22,8 @@ export default function StepConfirm({ book, save }: StepProps) {
   const setOpt = (patch: Partial<Book['options']>) => void save({ ...book, options: { ...book.options, ...patch } });
 
   const sel = book.chapters.filter((c) => c.selected);
+  const lp = langPair(book);
+  const outLang = book.meta.language || lp.tgt;
   const chars = sel.reduce((s, c) => s + c.chars, 0);
   const usable = keys.filter((k) => !k.disabled && k.state !== 'invalid');
   const models = Array.from(new Set(usable.map((k) => k.model || DEFAULT_MODEL)));
@@ -49,8 +52,9 @@ export default function StepConfirm({ book, save }: StepProps) {
   );
   const summary: [string, string][] = [
     [t('cf.s.book'), book.meta.title || book.original.title],
+    [t('cf.s.lang'), `${langName(lp.src, lang)} → ${langName(lp.tgt, lang)}`],
     [t('cf.s.chapters'), `${sel.length} / ${book.chapters.length}`],
-    [t('cf.s.tokens'), `≈ ${fmtBig(estimateTokens(chars), lang)}`],
+    [t('cf.s.tokens'), `≈ ${fmtBig(estimateTokensFor(chars, lp.src), lang)}`],
     [t('cf.s.keys'), `${usable.length} / ${keys.length}`],
     [t('cf.s.model'), book.prompt.model || models.join(', ') || DEFAULT_MODEL],
     [t('cf.s.conc'), t('cf.s.concN', { n: conc })],
@@ -60,27 +64,13 @@ export default function StepConfirm({ book, save }: StepProps) {
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: '999 1 600px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <fieldset style={{ border: 0, margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-            <legend className="h2" style={{ marginBottom: 12 }}>{t('cf.output')}</legend>
-            <label className="card" style={{ position: 'relative', padding: 18, display: 'flex', flexDirection: 'column', gap: 10, border: '2px solid var(--text)', cursor: 'pointer' }}>
-              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="sdot cur" style={{ width: 26, height: 26 }}><Icon name="check" size={14} /></span>
-                <span className="chip ok plain">{t('cf.v1')}</span>
-              </span>
-              <input type="radio" name="out" defaultChecked className="sr-only" />
-              <span style={{ fontWeight: 700, fontSize: 15 }}>{t('cf.a')}</span>
-              <span className="hint">{t('cf.aHint')}</span>
-            </label>
-            <label className="card" style={{ position: 'relative', padding: 18, display: 'flex', flexDirection: 'column', gap: 10, opacity: 0.55, cursor: 'not-allowed', background: 'transparent' }}>
-              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="sdot" style={{ width: 26, height: 26 }} />
-                <span className="chip mute plain">{t('cf.soon')}</span>
-              </span>
-              <input type="radio" name="out" disabled className="sr-only" />
-              <span style={{ fontWeight: 700, fontSize: 15 }}>{t('cf.b')}</span>
-              <span className="hint">{t('cf.bHint')}</span>
-            </label>
-          </fieldset>
+          <section className="card" style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span className="sdot cur" style={{ width: 30, height: 30 }}><Icon name="check" size={14} /></span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{t('cf.out')}</span>
+              <span className="hint">{t('cf.outHint', { l: langName(outLang, lang), c: outLang })}</span>
+            </div>
+          </section>
           <section className="card" style={{ padding: '6px 18px 8px' }}>
             {row(t('cf.toc'), t('cf.tocHint'), book.options.translateToc, (v) => setOpt({ translateToc: v }))}
             {row(t('cf.bi'), t('cf.biHint'), book.options.bilingual, (v) => setOpt({ bilingual: v }))}

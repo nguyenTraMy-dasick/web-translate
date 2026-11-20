@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as db from '../lib/db';
 import type { Book, BookMeta } from '../lib/types';
 import { getCover, slugify, translateShort } from '../lib/actions';
+import { langName } from '../lib/langs';
 import { useT } from '../i18n';
 import { Banner, Toggle, WizardActions, useToast } from '../ui/common';
 import { Icon } from '../ui/icons';
@@ -9,7 +10,7 @@ import { href } from '../router';
 import type { StepProps } from './Wizard';
 
 export default function StepMeta({ book, save, next }: StepProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const toast = useToast();
   const m = book.meta;
   const o = book.original;
@@ -34,7 +35,7 @@ export default function StepMeta({ book, save, next }: StepProps) {
     try {
       const v = await translateShort(book, src, field);
       const patch: Partial<BookMeta> = { [field]: v };
-      if (field === 'title') patch.fileName = `${slugify(v)}_vi.epub`;
+      if (field === 'title') patch.fileName = `${slugify(v)}_${book.targetLang || 'vi'}.epub`;
       set(patch);
     } catch (e: any) {
       toast(t('meta.trFail', { e: e?.message === 'no_keys' ? t('err.no_keys') : String(e?.message || e) }), 'err');
@@ -54,7 +55,7 @@ export default function StepMeta({ book, save, next }: StepProps) {
   };
   const restore = () => set({
     title: o.title, creator: o.creator, description: o.description, publisher: o.publisher, subjects: [...o.subjects],
-    fileName: `${slugify(o.title || 'book')}_vi.epub`,
+    fileName: `${slugify(o.title || 'book')}_${book.targetLang || 'vi'}.epub`,
   });
 
   const field = (label: string, key: 'title' | 'creator' | 'translator' | 'publisher' | 'fileName', opts: { orig?: string; tr?: 'title' | 'creator'; ph?: string; mono?: boolean } = {}) => (
@@ -105,8 +106,9 @@ export default function StepMeta({ book, save, next }: StepProps) {
             {field(t('meta.f.translator'), 'translator', { ph: t('meta.f.translatorPh') })}
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span className="label" style={{ margin: 0 }}>{t('meta.f.lang')}</span>
               <select className="input" value={m.language} onChange={(e) => set({ language: e.target.value })}>
-                <option value="vi">vi — Tiếng Việt</option>
-                <option value={o.language || 'zh'}>{o.language || 'zh'} — {t('common.original')}</option>
+                {Array.from(new Set([book.targetLang || 'vi', m.language, o.language].filter(Boolean))).map((c) => (
+                  <option key={c} value={c}>{c} — {langName(c, lang)}{c === o.language ? ` (${t('common.original')})` : ''}</option>
+                ))}
               </select></label>
             <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span className="label" style={{ margin: 0 }}>{t('meta.f.subjects')}</span>

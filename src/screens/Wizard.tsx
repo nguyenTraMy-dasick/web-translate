@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import * as db from '../lib/db';
 import type { Book } from '../lib/types';
-import { createBookFromFile } from '../lib/actions';
+import { createBookFromFile, langPair, withLangs } from '../lib/actions';
+import { LANGS, estimateTokensFor, langName } from '../lib/langs';
 import { useBook } from '../hooks';
 import { useT, type MsgKey } from '../i18n';
-import { Page, Stepper, Title, WizardActions, estimateTokens, fmtBig, fmtNum, useToast } from '../ui/common';
+import { Page, Stepper, Title, WizardActions, fmtBig, fmtNum, useToast } from '../ui/common';
 import { Icon } from '../ui/icons';
 import { go, href } from '../router';
 import KeysPanel from './KeysPanel';
@@ -95,6 +96,15 @@ function UploadStep({ book, save, next }: Partial<StepProps>) {
     return <div style={{ maxWidth: 560 }}>{drop}</div>;
   }
 
+  const lp = langPair(book);
+  const langSel = (label: MsgKey, value: string, onChange: (v: string) => void) => (
+    <label><span className="label">{t(label)}</span>
+      <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+        {!LANGS.some((l) => l.code === value) && <option value={value}>{value}</option>}
+        {LANGS.map((l) => <option key={l.code} value={l.code}>{l[lang]}</option>)}
+      </select>
+    </label>
+  );
   const setSel = (idx: number[], v: boolean) => {
     const b = structuredClone(book);
     for (const i of idx) if (b.chapters[i].chars > 0) b.chapters[i].selected = v;
@@ -131,6 +141,13 @@ function UploadStep({ book, save, next }: Partial<StepProps>) {
               <input type="file" accept=".epub,application/epub+zip" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
             </label>
           </section>
+          <section className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ color: 'var(--text3)', display: 'flex' }}><Icon name="globe" size={20} /></span><h2 className="h2">{t('up.lang')}</h2></div>
+            {langSel('up.lang.src', lp.src, (v) => void save(withLangs(book, v, lp.tgt)))}
+            {book.detectedLang && <span className="chip info plain" style={{ alignSelf: 'flex-start', whiteSpace: 'normal', height: 'auto', padding: '4px 10px' }}>{t('up.lang.detected', { l: langName(book.detectedLang.code, lang), r: book.detectedLang.reason })}</span>}
+            {langSel('up.lang.tgt', lp.tgt, (v) => void save(withLangs(book, lp.src, v)))}
+            {lp.src.split('-')[0] === lp.tgt.split('-')[0] ? <span className="hint" style={{ color: 'var(--warn)' }}>{t('up.lang.same')}</span> : <span className="hint">{t('up.lang.hint')}</span>}
+          </section>
         </div>
         <section className="card" style={{ flex: '999 1 560px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '18px 18px 14px' }}>
@@ -156,7 +173,7 @@ function UploadStep({ book, save, next }: Partial<StepProps>) {
                       <td className="hint mono">{c.index}</td>
                       <td className="zh" style={{ fontWeight: 600 }}>{c.title}</td>
                       <td className="mono" style={{ textAlign: 'right' }}>{fmtNum(c.chars, lang)}</td>
-                      <td className="mono" style={{ textAlign: 'right', color: 'var(--text3)' }}>~{fmtBig(estimateTokens(c.chars), lang)}</td>
+                      <td className="mono" style={{ textAlign: 'right', color: 'var(--text3)' }}>~{fmtBig(estimateTokensFor(c.chars, lp.src), lang)}</td>
                       <td><span className={`chip ${st[0]} plain`}>{st[1]}</span></td>
                     </tr>
                   );
@@ -166,11 +183,11 @@ function UploadStep({ book, save, next }: Partial<StepProps>) {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, padding: '14px 18px', borderTop: '1px solid var(--line2)', background: 'var(--card2)', borderRadius: '0 0 16px 16px' }}>
             <span style={{ fontWeight: 600 }}>{t('up.selected', { a: selected.length, b: chapters.length })}</span>
-            <span className="hint">{t('up.estimate', { n: fmtBig(estimateTokens(selChars), lang) })}</span>
+            <span className="hint">{t('up.estimate', { n: fmtBig(estimateTokensFor(selChars, lp.src), lang) })}</span>
           </div>
         </section>
       </div>
-      <WizardActions back={href('/')} nextDisabled={!selected.length} onNext={() => void next()} />
+      <WizardActions back={href('/library')} nextDisabled={!selected.length} onNext={() => void next()} />
     </>
   );
 }

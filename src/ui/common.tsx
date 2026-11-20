@@ -8,12 +8,13 @@ export const ThemeContext = createContext<{ dark: boolean; toggle: () => void }>
 export const ToastContext = createContext<(msg: string, kind?: 'ok' | 'err') => void>(() => {});
 export const useToast = () => useContext(ToastContext);
 
-export function Header({ active }: { active: 'library' | 'new' | 'keys' | null }) {
+export function Header({ active }: { active: 'discover' | 'library' | 'new' | 'keys' | null }) {
   const { t, lang } = useT();
   const { setLang } = useContext(LangContext);
   const { dark, toggle } = useContext(ThemeContext);
   const items: [typeof active, string, MsgKey][] = [
-    ['library', href('/'), 'nav.library'],
+    ['discover', href('/'), 'nav.discover'],
+    ['library', href('/library'), 'nav.library'],
     ['new', href('/new'), 'nav.new'],
     ['keys', href('/keys'), 'nav.keys'],
   ];

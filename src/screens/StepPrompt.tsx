@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import type { Book, GlossaryItem } from '../lib/types';
-import { ADDRESS_OPTIONS, DEFAULT_TEMPLATE, NAME_OPTIONS, PRESETS } from '../lib/prompt';
-import { saveTemplate, testTranslate, type TestResult } from '../lib/actions';
+import { DEFAULT_TEMPLATE } from '../lib/prompt';
+import { langPair, saveTemplate, testTranslate, type TestResult } from '../lib/actions';
+import { addressOptions, langName, nameOptions, presetsFor } from '../lib/langs';
 import { useKeys } from '../hooks';
 import { useT, type MsgKey } from '../i18n';
 import { WizardActions, useToast } from '../ui/common';
@@ -9,19 +10,23 @@ import { Icon } from '../ui/icons';
 import { href } from '../router';
 import type { StepProps } from './Wizard';
 
-const VARS = ['{the_loai}', '{kieu_ten}', '{xung_ho}', '{bang_thuat_ngu}', '{doan_truoc}'];
+const VARS = ['{ngon_ngu_nguon}', '{ngon_ngu_dich}', '{the_loai}', '{kieu_ten}', '{xung_ho}', '{bang_thuat_ngu}', '{doan_truoc}'];
 
 function parseCsv(text: string): GlossaryItem[] {
   return text.split(/\r?\n/).map((l) => l.split(/[,\t;]/).map((s) => s.trim().replace(/^"|"$/g, '')))
-    .filter((r) => r[0] && r[1] && !/^(gốc|source|src|中文)$/i.test(r[0]))
+    .filter((r) => r[0] && r[1] && !/^(gốc|source|src|中文|original)$/i.test(r[0]))
     .map(([src, dst, kind]) => ({ src, dst, kind: kind || '' }));
 }
 
 export default function StepPrompt({ book, save, next }: StepProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const toast = useToast();
   const { keys } = useKeys();
   const p = book.prompt;
+  const lp = langPair(book);
+  const presets = presetsFor(lp.src, lp.tgt);
+  const names = nameOptions(lp.src, lp.tgt);
+  const addrs = addressOptions(lp.src, lp.tgt);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [sample, setSample] = useState(() => book.chapters.find((c) => c.selected)?.index ?? 0);
@@ -33,8 +38,8 @@ export default function StepPrompt({ book, save, next }: StepProps) {
   const models = useMemo(() => Array.from(new Set(keys.flatMap((k) => k.models || [k.model]))).sort(), [keys]);
 
   const applyPreset = (id: string) => {
-    const pr = PRESETS.find((x) => x.id === id)!;
-    set({ preset: id, genre: pr.genre || p.genre, address: ADDRESS_OPTIONS[pr.address], names: NAME_OPTIONS[pr.names] });
+    const pr = presets.find((x) => x.id === id)!;
+    set({ preset: id, genre: pr.genre || p.genre, address: addrs[pr.address ?? 0] ?? addrs[0] });
   };
   const insertVar = (v: string) => {
     const ta = taRef.current;
@@ -79,16 +84,19 @@ export default function StepPrompt({ book, save, next }: StepProps) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
         <section className="card" style={{ flex: '999 1 560px', minWidth: 0, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h2 className="h2">{t('pr.prompt')}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <h2 className="h2">{t('pr.prompt')}</h2>
+              <a className="chip info plain" href={href(`/wizard/${book.id}/1`)} title={t('pr.changePair')} style={{ textDecoration: 'none' }}>{langName(lp.src, lang)} → {langName(lp.tgt, lang)}</a>
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn sm" onClick={() => { saveTemplate(p); toast(t('pr.tplSaved')); }}>{t('pr.saveTpl')}</button>
+              <button className="btn sm" onClick={() => { saveTemplate(p, lp); toast(t('pr.tplSaved')); }}>{t('pr.saveTpl')}</button>
               <button className="btn sm" onClick={() => set({ template: DEFAULT_TEMPLATE })}>{t('pr.reset')}</button>
             </div>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {sel('pr.preset', p.preset, PRESETS.map((x) => [x.id, t(`pr.preset.${x.id}` as MsgKey)]), applyPreset)}
-            {sel('pr.address', p.address, ADDRESS_OPTIONS.map((x) => [x, x]), (v) => set({ address: v }))}
-            {sel('pr.names', p.names, NAME_OPTIONS.map((x) => [x, x]), (v) => set({ names: v }))}
+            {sel('pr.preset', presets.some((x) => x.id === p.preset) ? p.preset : 'custom', presets.map((x) => [x.id, t(`pr.preset.${x.id}` as MsgKey)]), applyPreset)}
+            {addrs.length > 1 && sel('pr.address', p.address, addrs.map((x) => [x, x]), (v) => set({ address: v }))}
+            {sel('pr.names', names.includes(p.names) ? p.names : names[0], names.map((x) => [x, x]), (v) => set({ names: v }))}
           </div>
           <label><span className="label">{t('pr.genre')}</span>
             <input className="input" value={p.genre} onChange={(e) => set({ genre: e.target.value, preset: 'custom' })} /></label>
@@ -150,8 +158,8 @@ export default function StepPrompt({ book, save, next }: StepProps) {
             </table>
           </div>
           <form style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '12px 18px 18px', borderTop: '1px solid var(--line2)' }} onSubmit={(e) => { e.preventDefault(); addTerm(); }}>
-            <input className="input zh" style={{ flex: '1 1 90px', minHeight: 40 }} placeholder="中文" aria-label={t('pr.col.src')} value={newTerm.src} onChange={(e) => setNewTerm({ ...newTerm, src: e.target.value })} />
-            <input className="input" style={{ flex: '1 1 110px', minHeight: 40 }} placeholder="Tiếng Việt" aria-label={t('pr.col.dst')} value={newTerm.dst} onChange={(e) => setNewTerm({ ...newTerm, dst: e.target.value })} />
+            <input className="input zh" style={{ flex: '1 1 90px', minHeight: 40 }} placeholder={t('pr.col.src')} aria-label={t('pr.col.src')} value={newTerm.src} onChange={(e) => setNewTerm({ ...newTerm, src: e.target.value })} />
+            <input className="input" style={{ flex: '1 1 110px', minHeight: 40 }} placeholder={t('pr.col.dst')} aria-label={t('pr.col.dst')} value={newTerm.dst} onChange={(e) => setNewTerm({ ...newTerm, dst: e.target.value })} />
             <input className="input" style={{ flex: '1 1 90px', minHeight: 40 }} placeholder={t('pr.kindPh')} aria-label={t('pr.col.kind')} value={newTerm.kind} onChange={(e) => setNewTerm({ ...newTerm, kind: e.target.value })} />
             <button className="btn sm" type="submit" disabled={!newTerm.src.trim() || !newTerm.dst.trim()}><Icon name="plus" size={16} />{t('common.add')}</button>
           </form>

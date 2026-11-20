@@ -3,7 +3,7 @@ body{margin:0}
 .app.light{--bg:#F0F1F5;--card:#FFFFFF;--card2:#F7F8FA;--line:#BFC6D4;--line2:#E0E4EB;--text:#0A0E15;--text2:#212631;--text3:#4E576A;--pri:#0A0E15;--pri-fg:#FFFFFF;--ok:#13703A;--ok-bg:#E2F4E9;--warn:#94510A;--warn-bg:#FBEFDC;--err:#AE2222;--err-bg:#FBE5E5;--info:#1C47C9;--info-bg:#E5ECFB}
 .app *{box-sizing:border-box}
 .app a{color:var(--text)}.app a:hover{color:var(--text2)}
-.zh{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
+.zh{font-family:'Noto Sans SC','Noto Sans JP','Noto Sans KR','PingFang SC','Hiragino Sans','Microsoft YaHei','Malgun Gothic',sans-serif}
 .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text);white-space:nowrap}
 .btn:hover{background:var(--card2)}
@@ -78,3 +78,11 @@ html,body,#root{min-height:100%}
 @media (max-width:640px){.pairs{grid-template-columns:minmax(0,1fr)}.app header{padding:12px 16px!important}.app main{padding:20px 16px 40px!important}}
 .ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.dcard{padding:16px;display:flex;flex-direction:column;gap:14px}
+.dcover{position:relative;flex:none;width:76px;height:108px;border-radius:8px;background:var(--card2);border:1px solid var(--line2);overflow:hidden;display:grid;place-items:center;color:var(--text2)}
+.dcover img{width:100%;height:100%;object-fit:cover;display:block}
+.dcover .vt{writing-mode:vertical-rl;font-size:15px;font-weight:700;letter-spacing:.2em}
+.dcover .lt{align-self:end;justify-self:start;padding:6px;font-size:10px;font-weight:700;line-height:1.2}
+.rank{position:absolute;top:-8px;left:-8px;min-width:28px;height:28px;padding:0 6px;border-radius:99px;background:var(--pri);color:var(--pri-fg);display:grid;place-items:center;font-size:12px;font-weight:800;z-index:1}
+.clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.linkbtn{background:none;border:0;padding:0;color:var(--text);text-decoration:underline;cursor:pointer;font:inherit}

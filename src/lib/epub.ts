@@ -131,6 +131,7 @@ export interface ParsedEpub {
   original: Book['original'];
   chapters: ChapterInfo[];
   tocLabels: string[];
+  sample: string;          // vài nghìn ký tự đầu, để nhận diện ngôn ngữ
 }
 
 function dcText(opf: Document, name: string): string[] {
@@ -224,6 +225,7 @@ export async function parseEpub(data: Blob | ArrayBuffer): Promise<ParsedEpub> {
   };
 
   const tocSet = new Set(toc.labels);
+  let sample = '';
   const chapters: ChapterInfo[] = [];
   const spine = Array.from(opf.getElementsByTagNameNS(OPF, 'itemref'));
   for (const ref of spine) {
@@ -234,6 +236,7 @@ export async function parseEpub(data: Blob | ArrayBuffer): Promise<ParsedEpub> {
     const { doc } = parseXhtml(text);
     const blocks = collectBlocks(doc).map((b) => cleanText(rawText(b))).filter(Boolean);
     const chars = blocks.reduce((s, b) => s + b.length, 0);
+    if (sample.length < 6000 && !item.props.includes('nav')) sample += blocks.join('\n').slice(0, 6000 - sample.length);
     const isNav = item.props.split(/\s+/).includes('nav');
     // Trang mục lục dạng thường (toàn link tới chương) → mặc định không chọn, vì đã có tuỳ chọn dịch mục lục
     const isTocPage = blocks.length > 2 && blocks.filter((b) => tocSet.has(b) || /^(contents|目录|目錄)$/i.test(b)).length >= blocks.length - 1;
@@ -249,7 +252,7 @@ export async function parseEpub(data: Blob | ArrayBuffer): Promise<ParsedEpub> {
       isNav: isNav || isTocPage,
     });
   }
-  return { opfPath: m.opfPath, original, chapters, tocLabels: toc.labels };
+  return { opfPath: m.opfPath, original, chapters, tocLabels: toc.labels, sample };
 }
 
 // ---------- chia cụm để gửi Gemini ----------
@@ -379,11 +382,12 @@ export async function buildEpub({ book, chunks, source, cover }: BuildInput): Pr
     return changed;
   };
 
+  const outLang = book.meta.language || book.targetLang || 'vi';
   const setLang = (doc: Document) => {
     const html = doc.documentElement;
-    if (html.hasAttribute('lang')) html.setAttribute('lang', 'vi');
+    if (html.hasAttribute('lang')) html.setAttribute('lang', outLang);
     if (html.hasAttributeNS('http://www.w3.org/XML/1998/namespace', 'lang') || html.hasAttribute('xml:lang')) {
-      html.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:lang', 'vi');
+      html.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:lang', outLang);
     }
   };
 
@@ -457,7 +461,7 @@ export async function buildEpub({ book, chunks, source, cover }: BuildInput): Pr
   if (metadata) {
     setText(opf, metadata, DC, 'dc:title', finalTitle);
     setText(opf, metadata, DC, 'dc:creator', finalCreator);
-    setText(opf, metadata, DC, 'dc:language', book.meta.language || 'vi');
+    setText(opf, metadata, DC, 'dc:language', outLang);
     if (finalDesc) setText(opf, metadata, DC, 'dc:description', finalDesc);
     if (book.meta.publisher) setText(opf, metadata, DC, 'dc:publisher', book.meta.publisher);
     for (const s of Array.from(metadata.getElementsByTagNameNS(DC, 'subject'))) s.parentNode?.removeChild(s);

@@ -3,7 +3,8 @@ import JSZip from 'jszip';
 import * as db from './db';
 import { buildChunks, buildEpub, parseEpub, sampleBlocks } from './epub';
 import { generate, GeminiError, listModels, pickDefaultModel } from './gemini';
-import { buildSystem, buildUser, defaultPrompt, parseResult, shortSystem } from './prompt';
+import { buildSystem, buildUser, defaultPrompt, formatRules, parseResult, shortSystem, type LangPair } from './prompt';
+import { addressOptions, base, detectLang, nameOptions, presetsFor, promptLangName } from './langs';
 import { refreshKey } from './keypool';
 import type { ApiKey, Book, Chunk, ChunkItem } from './types';
 import { currentRunning } from './runner';
@@ -18,18 +19,21 @@ export async function createBookFromFile(file: File): Promise<Book> {
   const parsed = await parseEpub(file);
   const id = db.uid();
   const o = parsed.original;
+  const det = detectLang(o.language, parsed.sample);
+  const targetLang = base(det.code) === 'vi' ? 'en' : 'vi';
   const book: Book = {
     id, createdAt: Date.now(), updatedAt: Date.now(), status: 'draft',
     fileName: file.name, fileSize: file.size, opfPath: parsed.opfPath,
+    sourceLang: det.code, targetLang, detectedLang: { code: det.code, reason: det.reason },
     original: o,
     meta: {
-      title: o.title, creator: o.creator, translator: '', language: 'vi', description: o.description,
+      title: o.title, creator: o.creator, translator: '', language: targetLang, description: o.description,
       publisher: o.publisher, subjects: [...o.subjects],
-      fileName: `${slugify(o.title || file.name.replace(/\.epub$/i, ''))}_vi.epub`,
+      fileName: `${slugify(o.title || file.name.replace(/\.epub$/i, ''))}_${targetLang}.epub`,
     },
     chapters: parsed.chapters,
     tocLabels: parsed.tocLabels,
-    prompt: defaultPrompt(),
+    prompt: defaultPrompt(det.code, targetLang),
     options: { translateToc: true, autoMeta: true, bilingual: false },
     step: 1,
     progress: { done: 0, total: 0, errors: 0, running: 0 },
@@ -37,8 +41,10 @@ export async function createBookFromFile(file: File): Promise<Book> {
   // Prompt mẫu đã lưu (nút "Lưu làm mẫu"), nếu không có thì dùng lại prompt của truyện gần nhất
   const saved = loadTemplate();
   const prev = (await db.getBooks())[0];
-  if (saved) book.prompt = { ...book.prompt, ...saved, glossary: [] };
-  else if (prev) book.prompt = { ...prev.prompt, glossary: [] };
+  // Chỉ dùng lại khi cùng cặp ngôn ngữ, để không mang tuỳ chọn tiếng Trung sang truyện tiếng Nhật…
+  const same = (b?: { sourceLang?: string; targetLang?: string }) => !!b && base(b.sourceLang || 'zh') === base(det.code) && base(b.targetLang || 'vi') === targetLang;
+  if (saved && same(saved as any)) book.prompt = { ...book.prompt, ...saved, glossary: [] };
+  else if (prev && same(prev)) book.prompt = { ...prev.prompt, glossary: [] };
   await db.putFile(id, file);
   await db.putBook(book);
   return book;
@@ -123,7 +129,7 @@ export async function testTranslate(book: Book, chapterIndex: number, n = 3): Pr
   const t0 = Date.now();
   const { value, key } = await withKey((k) => generate({
     key: k.key, model: book.prompt.model || k.model, json: true, temperature: book.prompt.temperature,
-    system: buildSystem(book.prompt, items, ''), user: buildUser(items),
+    system: buildSystem(book.prompt, items, '', langPair(book)), user: buildUser(items),
   }));
   return { items, result: parseResult(value.text, items), tokens: value.tokens, ms: Date.now() - t0, keyLabel: key.label };
 }
@@ -131,7 +137,7 @@ export async function testTranslate(book: Book, chapterIndex: number, n = 3): Pr
 export async function translateShort(book: Book, text: string, kind: 'title' | 'creator' | 'description'): Promise<string> {
   const { value } = await withKey((k) => generate({
     key: k.key, model: book.prompt.model || k.model, temperature: 0.3,
-    system: shortSystem(book.prompt, kind), user: text,
+    system: shortSystem(book.prompt, kind, langPair(book)), user: text,
   }));
   return value.text.trim().replace(/^["“《]+|["”》]+$/g, '');
 }
@@ -184,9 +190,40 @@ export function chapterStats(book: Book, chunks: Chunk[]) {
 }
 
 const TPL_KEY = 'wt.promptTemplate';
-export function saveTemplate(p: Book['prompt']) {
+export function saveTemplate(p: Book['prompt'], lp: LangPair) {
   const { glossary: _g, ...rest } = p;
-  try { localStorage.setItem(TPL_KEY, JSON.stringify(rest)); } catch { /* bỏ qua */ }
+  try { localStorage.setItem(TPL_KEY, JSON.stringify({ ...rest, sourceLang: lp.src, targetLang: lp.tgt })); } catch { /* bỏ qua */ }
+}
+
+export function langPair(book: Book): LangPair {
+  return { src: book.sourceLang || 'zh', tgt: book.targetLang || 'vi' };
+}
+
+/** Đổi cặp ngôn ngữ của truyện: chỉnh lại các tuỳ chọn prompt không còn hợp lệ. */
+export function withLangs(book: Book, src: string, tgt: string): Book {
+  const b = structuredClone(book);
+  b.sourceLang = src;
+  b.targetLang = tgt;
+  const names = nameOptions(src, tgt);
+  const addr = addressOptions(src, tgt);
+  if (!names.includes(b.prompt.names)) b.prompt.names = names[0];
+  if (!addr.includes(b.prompt.address)) b.prompt.address = addr[0];
+  const presets = presetsFor(src, tgt);
+  if (!presets.some((p) => p.id === b.prompt.preset)) {
+    b.prompt.preset = presets[0].id;
+    b.prompt.genre = presets[0].genre || b.prompt.genre;
+  }
+  if (b.meta.language === book.targetLang) b.meta.language = tgt;
+  b.meta.fileName = b.meta.fileName.replace(/_([a-z]{2}(?:-[A-Za-z]+)?)\.epub$/, `_${tgt}.epub`);
+  return b;
+}
+
+/** Dịch nhanh một loạt đoạn ngắn (dùng cho trang Khám phá). Trả về map id → bản dịch. */
+export async function translateBatch(items: ChunkItem[], src: string, tgt: string): Promise<Record<string, string>> {
+  const p = defaultPrompt(src, tgt);
+  const system = `Dịch các đoạn sau từ ${promptLangName(src)} sang ${promptLangName(tgt)}. Đây là tên truyện, tên tác giả và tóm tắt ngắn trên bảng xếp hạng. Tên riêng theo ${p.names}.` + formatRules(tgt);
+  const { value } = await withKey((k) => generate({ key: k.key, model: k.model, json: true, temperature: 0.3, system, user: buildUser(items) }));
+  return parseResult(value.text, items);
 }
 function loadTemplate(): Partial<Book['prompt']> | null {
   try { const s = localStorage.getItem(TPL_KEY); return s ? JSON.parse(s) : null; } catch { return null; }

@@ -4,6 +4,7 @@ import { Header, ThemeContext, ToastContext } from './ui/common';
 import { useRoute } from './router';
 import { recoverInterrupted } from './lib/actions';
 import Library from './screens/Library';
+import Discover from './screens/Discover';
 import KeysScreen from './screens/KeysScreen';
 import Wizard from './screens/Wizard';
 import BookPage from './screens/BookPage';
@@ -42,13 +43,14 @@ export default function App() {
 
   const [r0, r1, r2] = route;
   let screen;
-  let active: 'library' | 'new' | 'keys' | null = null;
-  if (!r0) { screen = <Library />; active = 'library'; }
+  let active: 'discover' | 'library' | 'new' | 'keys' | null = null;
+  if (!r0) { screen = <Discover />; active = 'discover'; }
+  else if (r0 === 'library') { screen = <Library />; active = 'library'; }
   else if (r0 === 'keys') { screen = <KeysScreen />; active = 'keys'; }
   else if (r0 === 'new') { screen = <Wizard step={1} />; active = 'new'; }
   else if (r0 === 'wizard' && r1) { screen = <Wizard bookId={r1} step={Math.min(5, Math.max(1, Number(r2) || 1))} />; active = 'new'; }
   else if (r0 === 'book' && r1) { screen = <BookPage bookId={r1} />; }
-  else { screen = <Library />; active = 'library'; }
+  else { screen = <Discover />; active = 'discover'; }
 
   return (
     <LangContext.Provider value={{ lang, setLang }}>

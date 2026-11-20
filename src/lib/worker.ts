@@ -108,7 +108,7 @@ async function run(bookId: string) {
       const model = b.prompt.model || key.model;
       const res = await generate({
         key: key.key, model, json: true, signal: ctrl.signal, temperature: b.prompt.temperature,
-        system: buildSystem(b.prompt, chunk.items, chunk.context),
+        system: buildSystem(b.prompt, chunk.items, chunk.context, { src: b.sourceLang || 'zh', tgt: b.targetLang || 'vi' }),
         user: buildUser(chunk.items),
       });
       chunk.result = parseResult(res.text, chunk.items);

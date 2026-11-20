@@ -3,7 +3,7 @@ import type { ApiKey, Book, Chunk, LogEntry, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 
 const DB_NAME = 'web-translate';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -21,6 +21,8 @@ function open(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('keys')) db.createObjectStore('keys', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
+      // v2: bộ nhớ đệm bản dịch tên & tóm tắt ở trang Khám phá
+      if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache');
       if (!db.objectStoreNames.contains('logs')) {
         const s = db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
         s.createIndex('bookId', 'bookId');
@@ -151,6 +153,23 @@ export async function trimLogs(bookId: string): Promise<void> {
     list.sort((a, b) => a.at - b.at);
     for (const e of list.slice(0, list.length - MAX_LOGS)) s.delete(e.id!);
   }
+  await done(tx);
+}
+
+// ---------- cache (bản dịch ở trang Khám phá) ----------
+export async function getCacheMany(keys: string[]): Promise<Record<string, string>> {
+  const s = await store('cache');
+  const out: Record<string, string> = {};
+  await Promise.all(keys.map(async (k) => {
+    const v = await wrap(s.get(k)) as string | undefined;
+    if (v !== undefined) out[k] = v;
+  }));
+  return out;
+}
+export async function putCacheMany(entries: Record<string, string>): Promise<void> {
+  const db = await open();
+  const tx = db.transaction('cache', 'readwrite');
+  for (const [k, v] of Object.entries(entries)) tx.objectStore('cache').put(v, k);
   await done(tx);
 }
 

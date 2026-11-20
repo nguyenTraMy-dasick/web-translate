@@ -1,22 +1,10 @@
 // Mẫu prompt, ghép biến và đọc kết quả JSON trả về từ Gemini.
 import type { ChunkItem, GlossaryItem, PromptSettings } from './types';
 import { GeminiError } from './gemini';
+import { addressOptions, nameOptions, presetsFor, promptLangName } from './langs';
+export { PRESETS } from './langs';
 
-export const ADDRESS_OPTIONS = [
-  'cổ trang (ta – ngươi, huynh – muội, sư tôn – đồ nhi)',
-  'hiện đại (tôi – cậu, anh – em, chị – em)',
-];
-export const NAME_OPTIONS = ['âm Hán Việt (ví dụ: 林逸 → Lâm Dật)', 'pinyin (ví dụ: 林逸 → Lin Yi)'];
-
-export interface Preset { id: string; genre: string; address: number; names: number }
-export const PRESETS: Preset[] = [
-  { id: 'xianxia', genre: 'tiên hiệp / huyền huyễn', address: 0, names: 0 },
-  { id: 'ancient', genre: 'ngôn tình cổ đại', address: 0, names: 0 },
-  { id: 'modern', genre: 'đô thị hiện đại', address: 1, names: 0 },
-  { id: 'custom', genre: '', address: 1, names: 0 },
-];
-
-export const DEFAULT_TEMPLATE = `Bạn là dịch giả truyện {the_loai} từ tiếng Trung sang tiếng Việt.
+export const DEFAULT_TEMPLATE = `Bạn là dịch giả truyện {the_loai} từ {ngon_ngu_nguon} sang {ngon_ngu_dich}.
 
 Yêu cầu:
 - Dịch sát nghĩa nhưng mượt, đúng văn phong {the_loai}.
@@ -28,20 +16,22 @@ Ngữ cảnh đoạn trước (chỉ để tham khảo, không dịch):
 {doan_truoc}`;
 
 // Phần cố định web tự thêm vào cuối để ghép bản dịch đúng chỗ — người dùng không sửa.
-export const FORMAT_RULES = `
+export function formatRules(tgt: string): string {
+  return `
 
 ĐỊNH DẠNG BẮT BUỘC:
 Đầu vào là một object JSON; mỗi khoá là mã đoạn (p1, p2, …), giá trị là đoạn văn gốc.
-Trả về DUY NHẤT một object JSON có đúng các khoá đó, giá trị là bản dịch tiếng Việt của đoạn tương ứng.
+Trả về DUY NHẤT một object JSON có đúng các khoá đó, giá trị là bản dịch ${promptLangName(tgt)} của đoạn tương ứng.
 Không gộp, không tách, không bỏ sót đoạn nào, không thêm khoá mới, không bọc trong markdown.`;
+}
 
-export function defaultPrompt(): PromptSettings {
-  const p = PRESETS[0];
+export function defaultPrompt(src = 'zh', tgt = 'vi'): PromptSettings {
+  const p = presetsFor(src, tgt)[0];
   return {
     preset: p.id,
     genre: p.genre,
-    address: ADDRESS_OPTIONS[p.address],
-    names: NAME_OPTIONS[p.names],
+    address: addressOptions(src, tgt)[p.address ?? 0] ?? addressOptions(src, tgt)[0],
+    names: nameOptions(src, tgt)[0],
     template: DEFAULT_TEMPLATE,
     glossary: [],
     model: '',
@@ -57,7 +47,9 @@ export function glossaryFor(glossary: GlossaryItem[], text: string): string {
   return '\n' + used.map((g) => `  ${g.src} → ${g.dst}`).join('\n');
 }
 
-export function buildSystem(p: PromptSettings, items: ChunkItem[], context: string): string {
+export interface LangPair { src: string; tgt: string }
+
+export function buildSystem(p: PromptSettings, items: ChunkItem[], context: string, lp: LangPair): string {
   const all = items.map((i) => i.text).join('\n');
   const vars: Record<string, string> = {
     the_loai: p.genre || 'tiểu thuyết',
@@ -65,9 +57,11 @@ export function buildSystem(p: PromptSettings, items: ChunkItem[], context: stri
     xung_ho: p.address,
     bang_thuat_ngu: glossaryFor(p.glossary, all),
     doan_truoc: context || '(đây là đầu chương)',
+    ngon_ngu_nguon: promptLangName(lp.src),
+    ngon_ngu_dich: promptLangName(lp.tgt),
   };
-  const body = p.template.replace(/\{(the_loai|kieu_ten|xung_ho|bang_thuat_ngu|doan_truoc)\}/g, (_, k) => vars[k]);
-  return body + FORMAT_RULES;
+  const body = p.template.replace(/\{(the_loai|kieu_ten|xung_ho|bang_thuat_ngu|doan_truoc|ngon_ngu_nguon|ngon_ngu_dich)\}/g, (_, k) => vars[k]);
+  return body + formatRules(lp.tgt);
 }
 
 export function buildUser(items: ChunkItem[]): string {
@@ -110,7 +104,7 @@ export function parseResult(text: string, items: ChunkItem[]): Record<string, st
 }
 
 /** Prompt ngắn cho tên truyện / tác giả / mô tả. */
-export function shortSystem(p: PromptSettings, kind: 'title' | 'creator' | 'description' | 'any'): string {
+export function shortSystem(p: PromptSettings, kind: 'title' | 'creator' | 'description' | 'any', lp: LangPair): string {
   const what = kind === 'title' ? 'tên truyện' : kind === 'creator' ? 'bút danh tác giả' : kind === 'description' ? 'đoạn giới thiệu truyện' : 'đoạn văn';
-  return `Dịch ${what} sau từ tiếng Trung sang tiếng Việt, văn phong ${p.genre || 'tiểu thuyết'}, tên riêng theo ${p.names}. Chỉ trả về bản dịch, không giải thích, không thêm dấu ngoặc.`;
+  return `Dịch ${what} sau từ ${promptLangName(lp.src)} sang ${promptLangName(lp.tgt)}, văn phong ${p.genre || 'tiểu thuyết'}, tên riêng theo ${p.names}. Chỉ trả về bản dịch, không giải thích, không thêm dấu ngoặc.`;
 }

@@ -66,12 +66,12 @@ export default function BookPage({ bookId }: { bookId: string }) {
   }
 
   if (book === undefined) return <Page><p className="hint">{t('common.loading')}</p></Page>;
-  if (!book || !stats) return <Page><p>{t('pg.notFound')}</p><a className="btn" href={href('/')}>{t('pg.breadcrumb')}</a></Page>;
+  if (!book || !stats) return <Page><p>{t('pg.notFound')}</p><a className="btn" href={href('/library')}>{t('pg.breadcrumb')}</a></Page>;
 
   if (book.status === 'draft' || !chunks.length) {
     return (
       <Page>
-        <nav aria-label="Breadcrumb" className="hint"><a href={href('/')} style={{ color: 'var(--text3)' }}>{t('pg.breadcrumb')}</a> / {book.meta.title}</nav>
+        <nav aria-label="Breadcrumb" className="hint"><a href={href('/library')} style={{ color: 'var(--text3)' }}>{t('pg.breadcrumb')}</a> / {book.meta.title}</nav>
         <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
           <p style={{ margin: 0 }}>{t('pg.notStarted')}</p>
           <a className="btn pri" href={href(`/wizard/${book.id}/${book.step || 1}`)}>{t('pg.goWizard')}<Icon name="right" /></a>
@@ -195,7 +195,7 @@ export default function BookPage({ bookId }: { bookId: string }) {
 
   return (
     <Page>
-      <nav aria-label="Breadcrumb" className="hint"><a href={href('/')} style={{ color: 'var(--text3)' }}>{t('pg.breadcrumb')}</a> / {book.meta.title || book.original.title}</nav>
+      <nav aria-label="Breadcrumb" className="hint"><a href={href('/library')} style={{ color: 'var(--text3)' }}>{t('pg.breadcrumb')}</a> / {book.meta.title || book.original.title}</nav>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>
         <div className="zh" aria-hidden="true" style={{ width: 52, height: 72, borderRadius: 8, background: 'var(--card)', border: '1px solid var(--line2)', display: 'grid', placeItems: 'center', writingMode: 'vertical-rl', fontWeight: 700, fontSize: 12, letterSpacing: '0.15em', color: 'var(--text2)', overflow: 'hidden' }}>{(book.original.title || '').slice(0, 5)}</div>
         <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
